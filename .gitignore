@@ -38,3 +38,6 @@ Thumbs.db
 # Logs
 logs
 *.log
+
+test_main.http
+uv.lock
