@@ -10,7 +10,6 @@ venv/
 .env
 pip-lock.json
 # ← API ключи и бд
-config.py
 chatbot.db
 
 # Node.js / React / Vite
