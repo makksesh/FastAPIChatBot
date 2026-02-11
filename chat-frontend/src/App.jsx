@@ -22,13 +22,7 @@ function App() {
         if (!res.ok) {
           throw new Error(`Ошибка получения истории: ${res.status}`)
         }
-
         const data = await res.json()
-        // Ожидаем, что backend возвращает:
-        // [
-        //   { id, ip_address, prompt, response },
-        //   ...
-        // ]
 
         const historyMessages = data.flatMap((item) => {
           const arr = []
@@ -74,13 +68,8 @@ function App() {
       }
 
       const data = await response.json()
-      // У тебя в main.py: return {"answer": {answer}}
-      // Это означает, что answer приходит как множество, вытащим первую строку
-      let answerText = ''
-      if (data && data.answer) {
-        const values = Array.from(data.answer)
-        answerText = values[0] ?? ''
-      }
+
+      const answerText = data.answer || 'Пустой ответ от сервера'
 
       const botMessage = {
         role: 'bot',

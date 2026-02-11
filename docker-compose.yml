@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # --- Сервис 1: Бэкенд ---
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fast-api-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./chatbot.db:/app/chatbot.db
+    env_file:
+      - .env
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+
+
+  # --- Сервис 2: Фронтенд ---
+  frontend:
+    build:
+      context: ./chat-frontend
+      dockerfile: Dockerfile
+    container_name: react-frontend
+    ports:
+      - "5500:80"
+    depends_on:
+      - backend

@@ -1,41 +1,58 @@
-from fastapi import FastAPI
-from sqlalchemy import create_engine, ForeignKey, select
-from sqlalchemy.orm import sessionmaker, DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-engine = create_engine(url="sqlite:///chatbot.db")
-session = sessionmaker(bind=engine)
+# 1. Движок БД
+DATABASE_URL = "sqlite+aiosqlite:///chatbot.db"
+
+engine = create_async_engine(
+    DATABASE_URL,
+    future=True,
+    echo=True,
+)
+
+# 2. Фабрика сессий
+async_session = async_sessionmaker(
+    bind=engine,
+    expire_on_commit=False,  # чтобы объекты не «отваливались» после commit
+    class_=AsyncSession,
+)
 
 
+# 3. Базовый класс для моделей
 class Base(DeclarativeBase):
     pass
 
-# class Users(Base):
-#     __tablename__ = "users"
-#
-#     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-#     name: Mapped[str] = mapped_column()
-#     email: Mapped[str] = mapped_column()
-#     ip: Mapped[str] = mapped_column(index=True)
-
+# 4. Модель таблицы
 class ChatRequests(Base):
     __tablename__ = "chat_requests"
+
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     ip_address: Mapped[str] = mapped_column(index=True)
     prompt: Mapped[str]
     response: Mapped[str]
 
-def get_user_requests(ip_address: str) -> list[ChatRequests]:
-    with session() as new_session:
-        query = select(ChatRequests).filter_by(ip_address=ip_address)
-        result = new_session.execute(query)
+# 5. Функция инициализации схемы
+async def init_models() -> None:
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
+# 6. CRUD-функции
+
+async def get_user_requests(ip_address: str) -> list[ChatRequests]:
+    async with async_session() as session:
+        stmt = select(ChatRequests).filter_by(ip_address=ip_address)
+        result = await session.execute(stmt)
         return result.scalars().all()
 
-def add_user_data(ip_address: str, prompt: str, response: str) -> None:
-    with session() as new_session:
+
+async def add_user_data(ip_address: str, prompt: str, response: str) -> None:
+    async with async_session() as session:
         new_data = ChatRequests(
             ip_address=ip_address,
             prompt=prompt,
-            response=response
+            response=response,
         )
-        new_session.add(new_data)
-        new_session.commit()
+        session.add(new_data)
+        await session.commit()
